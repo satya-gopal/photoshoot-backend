@@ -1,0 +1,35 @@
+{
+  "name": "photoshoot-backend",
+  "version": "1.0.0",
+  "main": "server/index.ts",
+  "scripts": {
+    "dev": "tsx watch server/index.ts",
+    "start": "node dist/server/index.js",
+    "build": "tsc",
+    "db:push": "drizzle-kit push",
+    "db:seed": "tsx server/seed.ts"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/express-session": "^1.18.2",
+    "@types/multer": "^2.0.0",
+    "@types/uuid": "^10.0.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "drizzle-kit": "^0.31.6",
+    "drizzle-orm": "^0.44.7",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "multer": "^2.0.2",
+    "tsx": "^4.20.6",
+    "uuid": "^13.0.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
