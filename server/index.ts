@@ -37,7 +37,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const allowedOrigins = [
-  'https://shootingzonehyderabad.com/',
+  'https://shootingzonehyderabad.com',
   'https://photoshoot-backend-n9au.onrender.com',
   'http://localhost:5000',
   'http://127.0.0.1:5000',
