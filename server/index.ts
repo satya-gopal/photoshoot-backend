@@ -37,6 +37,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const allowedOrigins = [
+  'https://shootingzonehyderabad.com/',
+  'https://photoshoot-backend-n9au.onrender.com',
   'http://localhost:5000',
   'http://127.0.0.1:5000',
   'http://localhost:5001',
@@ -45,11 +47,6 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',      // ✅ Add this
   'https://5331a89b-2c98-4155-a4a8-1440e1123b0a-00-18h3kkx7t2kx3.pike.replit.dev',
   process.env.FRONTEND_URL,
-  'https://shootingzonehyderabad.com/public/',
-  'https://shootingzonehyderabad.com/',
-  
-
-
   process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null,
 ].filter(Boolean);
 
