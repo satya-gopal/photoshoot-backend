@@ -9,6 +9,8 @@ import { admins, sections, images, packages, reviews } from './schema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
+import { Client } from "basic-ftp";
+
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -43,7 +45,11 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',      // ✅ Add this
   'https://5331a89b-2c98-4155-a4a8-1440e1123b0a-00-18h3kkx7t2kx3.pike.replit.dev',
   process.env.FRONTEND_URL,
-  'https://shootingzonehyderabad.com/media/',
+  'https://shootingzonehyderabad.com/public/',
+  'https://shootingzonehyderabad.com/',
+  
+
+
   process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null,
 ].filter(Boolean);
 
@@ -253,6 +259,145 @@ app.post('/api/images/upload', requireAuth, upload.single('image'), async (req, 
     res.status(500).json({ error: 'Failed to upload image' });
   }
 });
+
+
+const uploads = multer({
+  dest: "uploads/",
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      // attach error message manually
+      (req as any).fileValidationError = "Only image files are allowed!";
+      return cb(null, false); 
+    }
+    cb(null, true);
+  },
+});
+
+// FTP Configuration
+
+
+// API endpoint to replace image via FTP
+app.post('/api/images/replace-ftp', uploads.single('image'), async (req, res) => {
+  const client = new Client();
+  client.ftp.verbose = true; // Enable logging for debugging
+  
+  let tempFilePath = null;
+
+  try {
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No image file provided' 
+      });
+    }
+
+    tempFilePath = req.file.path;
+    const { imageKey, imagePath, imageId } = req.body;
+
+    if (!imageKey || !imagePath) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields: imageKey or imagePath' 
+      });
+    }
+
+    console.log('Connecting to FTP server...');
+    await client.access({
+      host: process.env.FTP_HOST!,
+      user: process.env.FTP_USER!,
+      password: process.env.FTP_PASSWORD!,
+      port: Number(process.env.FTP_PORT!),
+      secure: process.env.FTP_SECURE === "true"
+    });    
+    console.log('Connected successfully');
+
+    // Navigate to public_html directory
+    await client.cd('public_html');
+    console.log('Changed to public_html directory');
+
+    // Extract the filename from imagePath
+    // Example: if imagePath is "https://yoursite.com/uploads/image123.jpg"
+    // we want to upload to public_html/uploads/image123.jpg
+    const urlPath = new URL(imagePath).pathname; // Gets "/uploads/image123.jpg"
+    const remotePath = urlPath.startsWith('/') ? urlPath.substring(1) : urlPath;
+    
+    // Get directory path and filename
+    const remoteDir = path.dirname(remotePath);
+    const remoteFileName = path.basename(remotePath);
+
+    console.log('Remote path:', remotePath);
+    console.log('Remote directory:', remoteDir);
+    console.log('Remote filename:', remoteFileName);
+
+    // Navigate to the target directory (create if doesn't exist)
+    if (remoteDir && remoteDir !== '.') {
+      const dirs = remoteDir.split('/');
+      for (const dir of dirs) {
+        if (dir) {
+          try {
+            await client.cd(dir);
+          } catch (err) {
+            // Directory doesn't exist, create it
+            await client.ensureDir(dir);
+          }
+        }
+      }
+    }
+
+    // Upload the file (this will overwrite if exists)
+    console.log('Uploading file...');
+    await client.uploadFrom(tempFilePath, remoteFileName);
+    console.log('File uploaded successfully');
+
+    // Close FTP connection
+    client.close();
+
+    // Delete temporary file
+    fs.unlink(tempFilePath, (err) => {
+      if (err) {
+        console.error('Failed to delete temp file:', err);
+      }
+    });
+    console.log('Temporary file deleted');
+
+    res.json({ 
+      success: true, 
+      message: 'Image replaced successfully',
+      imagePath: imagePath,
+      imageKey: imageKey
+    });
+
+  } catch (error) {
+    console.error('Error replacing image:', error);
+    
+    // Close FTP connection if still open
+    client.close();
+
+    // Clean up temporary file
+    if (tempFilePath) {
+      try {
+        fs.unlink(tempFilePath, (err) => {
+          if (err) {
+            console.error('Failed to delete temp file:', err);
+          }
+        });
+      } catch (err) {
+        console.error('Failed to delete temp file:', err);
+      }
+    }
+
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to replace image',
+      error: error 
+    });
+  }
+});
+
 
 app.put('/api/images/:id', requireAuth, async (req, res) => {
   try {
