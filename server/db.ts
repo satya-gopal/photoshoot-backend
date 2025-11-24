@@ -1,22 +1,29 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from 'ws';
-import * as schema from './schema';
 import dotenv from "dotenv";
-
 dotenv.config();
 
-console.log("Loaded ENV keys:", Object.keys(process.env));
-console.log("DATABASE_URL value:", process.env.DATABASE_URL);
+import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
+import * as schema from "./schema";
 
-neonConfig.webSocketConstructor = ws;
+let pool: Pool;
 
-console.log('DATABASE_URL:', process.env.DATABASE_URL);
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    'DATABASE_URL must be set. Did you forget to provision a database?'
-  );
+if (process.env.NODE_ENV === "production") {
+  // PROD (your VM / Docker)
+  pool = new Pool({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+  });
+} else {
+  // DEV (Mac / local) - keep using DATABASE_URL
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL must be set in non-production.");
+  }
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+  });
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+export const db = drizzle(pool, { schema });

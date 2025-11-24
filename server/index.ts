@@ -1,14 +1,15 @@
-import express from "express";
-import cors from "cors";
-import session from "express-session";
-import bcrypt from "bcryptjs";
-import multer from "multer";
-import path from "path";
-import { db } from "./db";
-import { admins, sections, images, packages, reviews } from "./schema";
-import { eq } from "drizzle-orm";
-import { v4 as uuidv4 } from "uuid";
-import fs from "fs";
+import express from 'express';
+import cors from 'cors';
+import session from 'express-session';
+import bcrypt from 'bcryptjs';
+import multer from 'multer';
+import path from 'path';
+import { db } from './db';
+import { admins, sections, images, packages, reviews } from './schema';
+import { eq } from 'drizzle-orm';
+import { asc } from "drizzle-orm";
+import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
 import { Client } from "basic-ftp";
 import nodemailer from "nodemailer";
 
@@ -468,8 +469,9 @@ app.delete("/api/images/:id", requireAuth, async (req, res) => {
   }
 });
 // packages
-app.get("/api/packages", async (req, res) => {
-  const data = await db.select().from(packages).orderBy(packages.order);
+app.get('/api/packages', async (req, res) => {
+//   const data = await db.select().from(packages).orderBy(packages.order);
+  const data = await db.select().from(packages).orderBy(asc(packages.order));
   res.json(data);
 });
 
@@ -650,7 +652,7 @@ app.post("/api/pre-register", async (req, res) => {
       <h1>📸 New Pre-Registration</h1>
       <p>You have received a new booking inquiry</p>
     </div>
-    
+
     <div class="content">
       <div class="section">
         <div class="section-title">Client Information</div>
@@ -834,7 +836,7 @@ app.post("/api/contact", async (req, res) => {
           margin-bottom: 16px;
           letter-spacing: -0.3px;
         }
-    
+
         /* 🔥 FIX: Email and phone in separate lines */
         .sender-contact {
           display: block;
@@ -847,7 +849,7 @@ app.post("/api/contact", async (req, res) => {
           font-size: 15px;
           color: #334155;
         }
-    
+
         .contact-icon {
           color: #2563eb;
           font-weight: 700;
@@ -975,7 +977,7 @@ app.post("/api/contact", async (req, res) => {
             <p>You have received a new inquiry</p>
           </div>
         </div>
-    
+
         <div class="content">
           <div class="sender-card">
             <div class="sender-name">${data.name}</div>
@@ -991,7 +993,7 @@ app.post("/api/contact", async (req, res) => {
               </div>` : ''}
             </div>
           </div>
-    
+
           ${data.subject ? `
           <div class="section">
             <div class="section-title">
@@ -1003,7 +1005,7 @@ app.post("/api/contact", async (req, res) => {
               <div class="subject-value">${data.subject}</div>
             </div>
           </div>` : ''}
-    
+
           <div class="section">
             <div class="section-title">
               <span>Message</span>
@@ -1013,12 +1015,12 @@ app.post("/api/contact", async (req, res) => {
               <p>${data.message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
             </div>
           </div>
-    
+
           <div class="cta-note">
             <span class="cta-highlight">Action Required:</span> Please respond within 24 hours.
           </div>
         </div>
-    
+
         <div class="footer">
           <p class="footer-text">
             This is an automated notification from <span class="footer-brand">Shooting Zone</span><br>
@@ -1033,7 +1035,7 @@ app.post("/api/contact", async (req, res) => {
     </body>
     </html>
     `;
-    
+
 
     await transporter.sendMail({
       from: `"Shooting Zone Contact Form" <${process.env.SMTP_USER}>`,
