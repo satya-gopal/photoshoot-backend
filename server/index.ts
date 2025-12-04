@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import path from 'path';
 import { db } from './db';
-import { admins, sections, images, packages, reviews } from './schema';
+import { admins, sections, images, packages, reviews,menupackages } from './schema';
 import { eq } from 'drizzle-orm';
 import { asc } from "drizzle-orm";
 import { v4 as uuidv4 } from 'uuid';
@@ -493,6 +493,69 @@ app.delete("/api/packages/:id", requireAuth, async (req, res) => {
   await db.delete(packages).where(eq(packages.id, parseInt(req.params.id)));
   res.json({ success: true });
 });
+
+// menupackages (for menu/category based packages)
+
+app.get("/api/menupackages", async (req, res) => {
+  try {
+    // optional query filters: ?category=babyshoot&published=true
+    const { category, published } = req.query;
+    console.log("Query params:", req.query);
+    let query = db.select().from(menupackages).orderBy(asc(menupackages.order));
+
+    // simple filtering without complicating drizzle types
+    if (typeof category === "string") {
+      query = query.where(eq(menupackages.category, category)) as any;
+    }
+    if (published === "true") {
+      query = query.where(eq(menupackages.isPublished, true)) as any;
+    }
+
+    const data = await query;
+    res.json(data);
+  } catch (error) {
+    console.error("Error fetching menupackages:", error);
+    res.status(500).json({ error: "Failed to fetch menupackages" });
+  }
+});
+
+app.post("/api/menupackages", requireAuth, async (req, res) => {
+  try {
+    const [record] = await db.insert(menupackages).values(req.body).returning();
+    res.json(record);
+  } catch (error) {
+    console.error("Error creating menupackage:", error);
+    res.status(500).json({ error: "Failed to create menupackage" });
+  }
+});
+
+app.put("/api/menupackages/:id", requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    console.log("Updating menupackage ID:", id, "with data:", req.body);
+    const [record] = await db
+      .update(menupackages)
+      .set({ ...req.body, updatedAt: new Date() })
+      .where(eq(menupackages.id, id))
+      .returning();
+    res.json(record);
+  } catch (error) {
+    console.error("Error updating menupackage:", error);
+    res.status(500).json({ error: "Failed to update menupackage" });
+  }
+});
+
+app.delete("/api/menupackages/:id", requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await db.delete(menupackages).where(eq(menupackages.id, id));
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting menupackage:", error);
+    res.status(500).json({ error: "Failed to delete menupackage" });
+  }
+});
+
 // reviews
 app.get("/api/reviews", async (req, res) => {
   const data = await db.select().from(reviews);
