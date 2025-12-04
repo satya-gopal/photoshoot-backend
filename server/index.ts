@@ -39,32 +39,51 @@ const upload = multer({ storage });
 
 const allowedOrigins = [
   "https://shootingzonehyderabad.com",
+  "https://www.shootingzonehyderabad.com",
   "https://photoshoot-backend-n9au.onrender.com",
+  "https://app.powerfolio.in",
   "http://localhost:5000",
   "http://127.0.0.1:5000",
   "http://localhost:5001",
   "http://127.0.0.1:5001",
-  "http://localhost:5173", // ✅ Add this
-  "http://127.0.0.1:5173", // ✅ Add this
-  "https://5331a89b-2c98-4155-a4a8-1440e1123b0a-00-18h3kkx7t2kx3.pike.replit.dev",
-  process.env.FRONTEND_URL,
-  process.env.REPLIT_DEV_DOMAIN
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : null,
-].filter(Boolean);
+  "http://localhost:5173",
+  "http://127.0.0.1:5173"
+];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-  })
-);
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    console.log("CORS origin received:", origin);
+    // allow non-browser / same-origin requests (no Origin header)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
+};
+// ---- APPLY CORS HERE ----
+app.use(cors(corsOptions));
+
+// SAFEST POSSIBLE PRE-FLIGHT HANDLER (NO path-to-regexp ERRORS)
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    cors(corsOptions)(req, res, () => {
+      res.sendStatus(204);
+    });
+  } else {
+    next();
+  }
+});
+
+
 app.use(express.json());
 app.use("/uploads", express.static(uploadsDir));
 app.use(
