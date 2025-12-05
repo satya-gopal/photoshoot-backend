@@ -25,7 +25,7 @@ import {
 } from "./types/emailTemplate";
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3001;
+const PORT = Number(process.env.PORT) || 3000; //don't change port
 
 // JWT Secret - MUST be set in .env file
 const JWT_SECRET = process.env.JWT_SECRET;
